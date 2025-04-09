@@ -1,3 +1,8 @@
+import {
+  createPeerListMarkup,
+  createAppendPeerMarkup,
+} from "./markupFunctions/peerList";
+
 const socket = new WebSocket("ws://localhost:3002");
 
 const peersContainer = document.getElementById("peers-container");
@@ -40,7 +45,7 @@ function onMessageHandler(message) {
       case "peers": {
         if (data.length !== 0) {
           peers = data;
-          peersContainer.innerHTML = createMarkup(peers, selfId);
+          peersContainer.innerHTML = createPeerListMarkup(peers, selfId);
         }
         console.log("Active peers:", peers);
         break;
@@ -49,13 +54,13 @@ function onMessageHandler(message) {
         peers.push(data);
         peersContainer.insertAdjacentHTML(
           "beforeend",
-          createAppendMarkup(data)
+          createAppendPeerMarkup(data)
         );
         break;
       }
       case "peerDisconnected": {
         peers = peers.filter((peer) => peer !== data);
-        peersContainer.innerHTML = createMarkup(peers, selfId);
+        peersContainer.innerHTML = createPeerListMarkup(peers, selfId);
         break;
       }
       case "broadcastMessage": {
@@ -72,19 +77,6 @@ function onMessageHandler(message) {
   } catch (error) {}
 }
 
-function createMarkup(data, selfId) {
-  const markup = data
-    .map((peer) => {
-      if (selfId && selfId === peer)
-        return `<li class=\"owner-id\">${selfId}</li>`;
-      return `<li>${peer}</li>`;
-    })
-    .join(" ");
-  return markup;
-}
-function createAppendMarkup(update) {
-  return `<li>${update}</li>`;
-}
 function createMessageObject(text, sender) {
   return { data: { message: text, from: sender }, type: "broadcastMessage" };
 }
