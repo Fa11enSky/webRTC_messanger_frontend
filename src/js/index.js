@@ -2,9 +2,11 @@ import {
   createPeerListMarkup,
   createAppendPeerMarkup,
 } from "./markupFunctions/peerList";
+import { getConnection, handleIncomingOffer, handleInitCall } from "./rtc";
 
-const socket = new WebSocket("ws://localhost:3002");
+export const socket = new WebSocket("ws://localhost:3002");
 
+const connectionForm = document.querySelector(".connection-form");
 const peersContainer = document.getElementById("peers-container");
 const messageForm = document.querySelector(".message-form");
 const messagesList = document.querySelector(".messages-list");
@@ -15,6 +17,7 @@ socket.onmessage = onMessageHandler;
 let selfId = null;
 let peers = [];
 messageForm.addEventListener("submit", sendMessageBroadcast);
+connectionForm.addEventListener("submit", handleInitCall);
 
 function sendMessageBroadcast(event) {
   event.preventDefault();
@@ -32,7 +35,7 @@ function onConnectionEstablished() {
   console.log("Connected to WebSocket server");
 }
 
-function onMessageHandler(message) {
+async function onMessageHandler(message) {
   try {
     const { type, data } = JSON.parse(message.data);
     switch (type) {
@@ -47,7 +50,6 @@ function onMessageHandler(message) {
           peers = data;
           peersContainer.innerHTML = createPeerListMarkup(peers, selfId);
         }
-        console.log("Active peers:", peers);
         break;
       }
       case "peersAppend": {
@@ -64,11 +66,33 @@ function onMessageHandler(message) {
         break;
       }
       case "broadcastMessage": {
-        console.log(data);
         messagesList.insertAdjacentHTML(
           "beforeend",
           `<li><div>From:${data.from}</div><p>Message:${data.message}</p></li>`
         );
+        break;
+      }
+      case "incomingOffer": {
+        const { from, offer } = data;
+        handleIncomingOffer({ from, offer });
+        break;
+      }
+      case "incomingAnswer": {
+        const answer = data;
+        const connection = getConnection();
+        if (!connection) return;
+        await connection.setRemoteDescription(
+          new RTCSessionDescription(answer)
+        );
+        break;
+      }
+      case "incomingIceCandidate": {
+        const { from, candidate } = data;
+        const connection = getConnection();
+
+        if (connection) {
+          await connection.addIceCandidate(new RTCIceCandidate(candidate));
+        }
         break;
       }
       default:
@@ -79,4 +103,8 @@ function onMessageHandler(message) {
 
 function createMessageObject(text, sender) {
   return { data: { message: text, from: sender }, type: "broadcastMessage" };
+}
+
+export function getMyId() {
+  return selfId;
 }
