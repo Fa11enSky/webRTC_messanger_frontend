@@ -1,1 +1,3 @@
-import './js/index'
+import "./js/index";
+import "./js/rtc";
+
