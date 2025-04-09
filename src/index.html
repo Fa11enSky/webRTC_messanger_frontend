@@ -13,6 +13,15 @@
       <button type="submit">Send message</button>
     </form>
     <ul class="messages-list"></ul>
+    <div class="connection-container">
+      <video id="localVideo"  autoplay muted playsinline></video>
+      <video id="remoteVideo"  autoplay muted playsinline></video>
+
+      <form class="connection-form">
+        <input type="text" name="id" class="selected-id" placeholder="client ID" />
+        <button type="submit" class="establish-connection-btn">Establish a connection</button>
+      </form>
+    </div>
     <script type="module" src="./main.js"></script>
   </body>
 </html>
