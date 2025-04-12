@@ -2,7 +2,8 @@ import {
   createPeerListMarkup,
   createAppendPeerMarkup,
 } from "./markupFunctions/peerList";
-import { getConnection, handleIncomingOffer, handleInitCall } from "./rtc";
+import { getConnection, handleIncomingOffer } from "./rtc/connection";
+import { handleInitCall } from "./ui/video";
 
 // Ініціалізація WebSocket-з'єднання
 export const socket = new WebSocket("ws://localhost:3002");
