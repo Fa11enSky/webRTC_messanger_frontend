@@ -1,6 +1,10 @@
+/**
+ * connection.js
+ * Модуль для ініціалізації та керування WebRTC-з'єднанням.
+ * Містить функції для створення peer-з'єднання, обробки offer/answer.
+ */
 import { getMyId, socket } from "../index";
-import { getRemoteStream,getLocalStream, initMedia, setRemoteStream } from "./media";
-
+import { getLocalStream, initMedia, handleConnectionTrack } from "./media";
 
 const config = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -27,15 +31,16 @@ export function getRemoteId() {
 /**
  * Створює нове WebRTC-з'єднання та додає локальні треки.
  * Налаштовує обробники ICE-кандидатів, треків і зміни стану з'єднання.
+ *
  * @returns {RTCPeerConnection}
  */
-
 export function createConnection() {
   peerConnection = new RTCPeerConnection(config);
   const localStream = getLocalStream();
   localStream?.getTracks().forEach((track) => {
     peerConnection.addTrack(track, localStream);
   });
+
   /**
    * Обробник події onicecandidate — надсилає ICE-кандидата на серверОбробник події onicecandidate — надсилає ICE-кандидата на сервер
    */
@@ -53,26 +58,10 @@ export function createConnection() {
       );
     }
   };
-  /**
-   * Обробник події onconnectionstatechange
-   */
-  peerConnection.onconnectionstatechange = () => {
-    console.log("Connection state:", peerConnection.connectionState);
-  };
-  /**
-   * Обробник події ontrack
-   */
-    peerConnection.ontrack = (event) => {
-      
-    if (!getRemoteStream()) {
-      setRemoteStream(new MediaStream());
-      const remoteVideo = document.getElementById("remoteVideo");
-      remoteVideo.srcObject = getRemoteStream();
-    }
-    event.streams[0]
-      .getTracks()
-      .forEach((track) => getRemoteStream().addTrack(track));
-  };
+  peerConnection.onconnectionstatechange = handleConnectionStatus;
+
+  peerConnection.ontrack = handleConnectionTrack;
+
   return peerConnection;
 }
 
@@ -124,4 +113,13 @@ export async function startCall(peerId) {
       },
     })
   );
+}
+
+/**
+ * Слухач події "onconnectionstatechange"
+ * @returns {string} Статус підключення
+ */
+function handleConnectionStatus() {
+  console.log("Connection state:", peerConnection.connectionState);
+  return peerConnection.connectionState;
 }
