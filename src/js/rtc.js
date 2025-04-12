@@ -1,3 +1,8 @@
+/**
+ * rtc.js
+ * Модуль для ініціалізації та керування WebRTC-з'єднанням.
+ * Містить функції для створення peer-з'єднання, ініціації дзвінків, обробки offer/answer.
+ */
 import { getMyId, socket } from ".";
 
 const config = {
@@ -10,7 +15,7 @@ let localStream = null;
 /**@type {MediaStream|null} */
 let remoteStream = null;
 
-/**@type {Crypto.UUID|null} */
+/**@type {string|null} */
 let remoteID = null;
 
 export function setRemoteId(id) {
@@ -27,7 +32,7 @@ export function getConnection() {
 
 /**
  * Створює нове WebRTC-з'єднання та додає локальні треки.
- * Встановлює обробники ICE-кандидатів, зміни стану з'єднання та отримання треків.
+ * Налаштовує обробники ICE-кандидатів, треків і зміни стану з'єднання.
  * @returns {RTCPeerConnection}
  */
 
@@ -37,7 +42,9 @@ export function createConnection() {
   localStream?.getTracks().forEach((track) => {
     peerConnection.addTrack(track, localStream);
   });
-  //onicecandidate-при знаходжені кандидатів відправляє їх стороні що викликається
+  /**
+   * Обробник події onicecandidate — надсилає ICE-кандидата на серверОбробник події onicecandidate — надсилає ICE-кандидата на сервер
+   */
   peerConnection.onicecandidate = (event) => {
     if (event.candidate) {
       socket.send(
@@ -52,11 +59,15 @@ export function createConnection() {
       );
     }
   };
-  //onconnectionstatechange-відображає статус підключення
+  /**
+   * Обробник події onconnectionstatechange
+   */
   peerConnection.onconnectionstatechange = () => {
     console.log("Connection state:", peerConnection.connectionState);
   };
-  //ontrack-коли приходить стрім від іншої сторони додає його в тег відео
+  /**
+   * Обробник події ontrack
+   */
   peerConnection.ontrack = (event) => {
     if (!remoteStream) {
       remoteStream = new MediaStream();
@@ -71,10 +82,9 @@ export function createConnection() {
 }
 
 /**
- * Робить запит до користувача для можливості використання відео/аудіо.
- * В разі успіху встановлює stream в властивість srcObject тегу video
- * та додає його до треків RTCPeerConnection.
- * @returns {MediaStream}
+ * Запитує дозвіл на використання камери та мікрофона.
+ * Встановлює локальний медіапотік у відеоелемент та додає треки до з'єднання.
+ * @returns {Promise<MediaStream|undefined>} Локальний медіапотік або undefined у разі помилки
  */
 
 export async function initMedia() {
@@ -96,15 +106,15 @@ export async function initMedia() {
     }
     return localStream;
   } catch (error) {
-    console.error("Failed to get media:", err);
+    console.error("Failed to get media:", error);
   }
 }
 
 /**
- * Слухач для сокету на подію "incomingOffer".
- * створює RTC підключення, встановлює remote i local description,
- * генерує обєкт answer і відправляє його стороні ініціює зв'язок
- * @param {{from:Crypto.UUID,offer:RTCPeerConnection.createOffer}} param0
+ * Обробляє вхідну WebRTC-пропозицію (offer).
+ * Ініціалізує медіапотік, встановлює опис з'єднання,
+ * створює відповідь (answer) і надсилає її назад ініціатору.
+ * @param {{ from: string, offer: RTCSessionDescriptionInit }} param0
  */
 
 export async function handleIncomingOffer({ from, offer }) {
@@ -129,8 +139,8 @@ export async function handleIncomingOffer({ from, offer }) {
 
 /**
  * Ініціює WebRTC-дзвінок до вказаного користувача.
- * Створює offer, зберігає його локально та надсилає через WebSocket.
- * @param {string} peerId - Ідентифікатор одержувача дзвінка
+ * Запитує доступ до медіа, створює з'єднання та offer.
+ * @param {string} peerId - Ідентифікатор користувача, якому телефонуємо
  */
 export async function startCall(peerId) {
   await initMedia();
@@ -152,8 +162,8 @@ export async function startCall(peerId) {
 
 /**
  * Обробляє подію відправки форми дзвінка.
- * Отримує ID цільового користувача та викликає startCall().
- * @param {Event} e - Подія submit
+ * Витягує ID одержувача з елемента форми та ініціює дзвінок.
+ * @param {SubmitEvent} event - Подія надсилання форми
  */
 export function handleInitCall(event) {
   event.preventDefault();
