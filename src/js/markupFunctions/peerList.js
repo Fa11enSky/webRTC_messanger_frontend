@@ -1,9 +1,9 @@
 /**
  * Створює розмітку з списку ідентифікаторів, власному ідентифікатору
  * додається клас owner-id
- * @param {[Crypto.UUID]} ids 
- * @param {Crypto.UUID} selfId 
- * @returns 
+ * @param {[string]} ids 
+ * @param {string} selfId 
+ * @returns {string}  Строка для innerHTML
  */
 export function createPeerListMarkup(ids, selfId) {
   const markup = ids
@@ -18,8 +18,8 @@ export function createPeerListMarkup(ids, selfId) {
 
 /**
  * Створює окремий елементи списку з ідентифікатора
- * @param {Crypto.UUID} id 
- * @returns 
+ * @param {string} id 
+ * @returns {string} Строка для innerHTML
  */
 
 export function createAppendPeerMarkup(id) {

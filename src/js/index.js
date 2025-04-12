@@ -4,12 +4,18 @@ import {
 } from "./markupFunctions/peerList";
 import { getConnection, handleIncomingOffer, handleInitCall } from "./rtc";
 
+// Ініціалізація WebSocket-з'єднання
 export const socket = new WebSocket("ws://localhost:3002");
 
+// DOM-елементи
 const connectionForm = document.querySelector(".connection-form");
 const peersContainer = document.getElementById("peers-container");
 const messageForm = document.querySelector(".message-form");
 const messagesList = document.querySelector(".messages-list");
+
+// Стан користувача
+let selfId = null;
+let peers = [];
 
 /**Додавання слухачів */
 socket.onerror = (error) => console.log(error);
@@ -18,14 +24,10 @@ socket.onmessage = onMessageHandler;
 messageForm.addEventListener("submit", sendMessageBroadcast);
 connectionForm.addEventListener("submit", handleInitCall);
 
-let selfId = null;
-let peers = [];
-
 /**
- * Відправка повідомлення в загальний чат і додавання його в розмітку.
- * В середині використовує функцію "createBroadcastMessageObject".
- * @param {FormDataEvent} event
- * @returns
+ * Відправляє повідомлення в загальний чат та додає його до DOM.
+ * 
+ * @param {SubmitEvent} event - Подія submit з форми повідомлення
  */
 
 function sendMessageBroadcast(event) {
@@ -40,14 +42,18 @@ function sendMessageBroadcast(event) {
   );
 }
 
+/**
+ * Викликається при успішному з'єднанні з WebSocket-сервером.
+ */
 function onConnectionEstablished() {
   console.log("Connected to WebSocket server");
 }
 
 /**
- * Обробник подій сокету. 
- * @param {{type:'identifierAssigned'|'peers'|'peersAppend'|'peerDisconnected'|'broadcastMessage'|'incomingOffer'|'incomingAnswer'|'incomingIceCandidate',data:{}}} message
- * @returns
+ * Обробка надходження повідомлень від WebSocket-сервера.
+ * Розпізнає тип повідомлення і виконує відповідну дію.
+ *
+ * @param {MessageEvent<string>} message - Повідомлення від WebSocket-сервера у форматі JSON
  */
 async function onMessageHandler(message) {
   try {
@@ -116,10 +122,11 @@ async function onMessageHandler(message) {
 }
 
 /**
- * Створює обєкт повідомлення загального чату.
- * @param {string} text
- * @param {Crypto.UUID} sender
- * @returns {{data:{message:string,from:Crypto.UUID},type:'broadcastMessage'}}
+ * Створює об'єкт повідомлення для відправки в загальний чат.
+ *
+ * @param {string} text - Текст повідомлення
+ * @param {string} sender - ID відправника
+ * @returns {{data: {message: string, from:string}, type: 'broadcastMessage'}}
  */
 
 function createBroadcastMessageObject(text, sender) {
@@ -127,8 +134,9 @@ function createBroadcastMessageObject(text, sender) {
 }
 
 /**
- * Повертає ідентифікатор користувача.
- * @returns {Crypto.UUID}
+ * Повертає ідентифікатор поточного користувача.
+ *
+ * @returns {string | null}
  */
 
 export function getMyId() {
