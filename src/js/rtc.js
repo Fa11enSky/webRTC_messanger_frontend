@@ -3,10 +3,14 @@ import { getMyId, socket } from ".";
 const config = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
+/** @type {RTCPeerConnection|null} */
 let peerConnection = null;
+/**@type {MediaStream|null} */
 let localStream = null;
+/**@type {MediaStream|null} */
 let remoteStream = null;
 
+/**@type {Crypto.UUID|null} */
 let remoteID = null;
 
 export function setRemoteId(id) {
@@ -22,9 +26,8 @@ export function getConnection() {
 }
 
 /**
- * Створює новий обєкт RTCPeerConnection.
- * Якщо користувач дозволив використання аудіо/відео додає stream до підключення
- * Додає слухачі подій.
+ * Створює нове WebRTC-з'єднання та додає локальні треки.
+ * Встановлює обробники ICE-кандидатів, зміни стану з'єднання та отримання треків.
  * @returns {RTCPeerConnection}
  */
 
@@ -125,9 +128,9 @@ export async function handleIncomingOffer({ from, offer }) {
 }
 
 /**
- * Ініціює виклик.Герерує офер, встановлює localDescription в RTCPeerConnection.
- * Відправляє офер.
- * @param {Crypto.UUID} peerId
+ * Ініціює WebRTC-дзвінок до вказаного користувача.
+ * Створює offer, зберігає його локально та надсилає через WebSocket.
+ * @param {string} peerId - Ідентифікатор одержувача дзвінка
  */
 export async function startCall(peerId) {
   await initMedia();
@@ -148,8 +151,9 @@ export async function startCall(peerId) {
 }
 
 /**
- * Слухач форми для здійснення ініціації з'єднання
- * @param {FormDataEvent} event
+ * Обробляє подію відправки форми дзвінка.
+ * Отримує ID цільового користувача та викликає startCall().
+ * @param {Event} e - Подія submit
  */
 export function handleInitCall(event) {
   event.preventDefault();
