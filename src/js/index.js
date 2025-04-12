@@ -11,19 +11,28 @@ const peersContainer = document.getElementById("peers-container");
 const messageForm = document.querySelector(".message-form");
 const messagesList = document.querySelector(".messages-list");
 
+/**Додавання слухачів */
 socket.onerror = (error) => console.log(error);
 socket.onopen = onConnectionEstablished;
 socket.onmessage = onMessageHandler;
-let selfId = null;
-let peers = [];
 messageForm.addEventListener("submit", sendMessageBroadcast);
 connectionForm.addEventListener("submit", handleInitCall);
+
+let selfId = null;
+let peers = [];
+
+/**
+ * Відправка повідомлення в загальний чат і додавання його в розмітку.
+ * В середині використовує функцію "createBroadcastMessageObject".
+ * @param {FormDataEvent} event
+ * @returns
+ */
 
 function sendMessageBroadcast(event) {
   event.preventDefault();
   const { value } = event.target.elements.message;
   if (value.trim().length === 0) return;
-  const message = createMessageObject(value, selfId);
+  const message = createBroadcastMessageObject(value, selfId);
   socket.send(JSON.stringify(message));
   messagesList.insertAdjacentHTML(
     "beforeend",
@@ -35,6 +44,11 @@ function onConnectionEstablished() {
   console.log("Connected to WebSocket server");
 }
 
+/**
+ * Обробник подій сокету. 
+ * @param {{type:'identifierAssigned'|'peers'|'peersAppend'|'peerDisconnected'|'broadcastMessage'|'incomingOffer'|'incomingAnswer'|'incomingIceCandidate',data:{}}} message
+ * @returns
+ */
 async function onMessageHandler(message) {
   try {
     const { type, data } = JSON.parse(message.data);
@@ -101,9 +115,21 @@ async function onMessageHandler(message) {
   } catch (error) {}
 }
 
-function createMessageObject(text, sender) {
+/**
+ * Створює обєкт повідомлення загального чату.
+ * @param {string} text
+ * @param {Crypto.UUID} sender
+ * @returns {{data:{message:string,from:Crypto.UUID},type:'broadcastMessage'}}
+ */
+
+function createBroadcastMessageObject(text, sender) {
   return { data: { message: text, from: sender }, type: "broadcastMessage" };
 }
+
+/**
+ * Повертає ідентифікатор користувача.
+ * @returns {Crypto.UUID}
+ */
 
 export function getMyId() {
   return selfId;

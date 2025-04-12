@@ -1,24 +1,41 @@
 import { getMyId, socket } from ".";
 
+const config = {
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+};
 let peerConnection = null;
 let localStream = null;
 let remoteStream = null;
+
 let remoteID = null;
 
-const config = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }, 
-  ],
-};
+export function setRemoteId(id) {
+  remoteID = id;
+}
+
+export function getRemoteId() {
+  return remoteID;
+}
+
+export function getConnection() {
+  return peerConnection;
+}
+
+/**
+ * Створює новий обєкт RTCPeerConnection.
+ * Якщо користувач дозволив використання аудіо/відео додає stream до підключення
+ * Додає слухачі подій.
+ * @returns {RTCPeerConnection}
+ */
 
 export function createConnection() {
   peerConnection = new RTCPeerConnection(config);
- 
-  localStream?.getTracks().forEach((track) => {
-   peerConnection.addTrack(track, localStream);
- });
 
-  peerConnection.onicecandidate =  (event) => {
+  localStream?.getTracks().forEach((track) => {
+    peerConnection.addTrack(track, localStream);
+  });
+  //onicecandidate-при знаходжені кандидатів відправляє їх стороні що викликається
+  peerConnection.onicecandidate = (event) => {
     if (event.candidate) {
       socket.send(
         JSON.stringify({
@@ -32,10 +49,11 @@ export function createConnection() {
       );
     }
   };
-
+  //onconnectionstatechange-відображає статус підключення
   peerConnection.onconnectionstatechange = () => {
     console.log("Connection state:", peerConnection.connectionState);
   };
+  //ontrack-коли приходить стрім від іншої сторони додає його в тег відео
   peerConnection.ontrack = (event) => {
     if (!remoteStream) {
       remoteStream = new MediaStream();
@@ -49,17 +67,12 @@ export function createConnection() {
   return peerConnection;
 }
 
-export function setRemoteId(id) {
-  remoteID = id;
-}
-
-export function getRemoteId() {
-  return remoteID;
-}
-
-export function getConnection() {
-  return peerConnection;
-}
+/**
+ * Робить запит до користувача для можливості використання відео/аудіо.
+ * В разі успіху встановлює stream в властивість srcObject тегу video
+ * та додає його до треків RTCPeerConnection.
+ * @returns {MediaStream}
+ */
 
 export async function initMedia() {
   try {
@@ -84,6 +97,13 @@ export async function initMedia() {
   }
 }
 
+/**
+ * Слухач для сокету на подію "incomingOffer".
+ * створює RTC підключення, встановлює remote i local description,
+ * генерує обєкт answer і відправляє його стороні ініціює зв'язок
+ * @param {{from:Crypto.UUID,offer:RTCPeerConnection.createOffer}} param0
+ */
+
 export async function handleIncomingOffer({ from, offer }) {
   await initMedia();
   setRemoteId(from);
@@ -104,6 +124,11 @@ export async function handleIncomingOffer({ from, offer }) {
   );
 }
 
+/**
+ * Ініціює виклик.Герерує офер, встановлює localDescription в RTCPeerConnection.
+ * Відправляє офер.
+ * @param {Crypto.UUID} peerId
+ */
 export async function startCall(peerId) {
   await initMedia();
   setRemoteId(peerId);
@@ -122,8 +147,12 @@ export async function startCall(peerId) {
   );
 }
 
-export function handleInitCall(e) {
-  e.preventDefault();
-  const id = e.target.elements.id.value;
+/**
+ * Слухач форми для здійснення ініціації з'єднання
+ * @param {FormDataEvent} event
+ */
+export function handleInitCall(event) {
+  event.preventDefault();
+  const id = event.target.elements.id.value;
   startCall(id);
 }
