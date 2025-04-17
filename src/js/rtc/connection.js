@@ -4,6 +4,7 @@
  * Містить функції для створення peer-з'єднання, обробки offer/answer.
  */
 import { getMyId, socket } from "../index";
+import { getDataChannel, setDataChannel, setupDataChannel } from "./dataChannel";
 import { getLocalStream, initMedia, handleConnectionTrack } from "./media";
 
 const config = {
@@ -34,15 +35,28 @@ export function getRemoteId() {
  *
  * @returns {RTCPeerConnection}
  */
-export function createConnection() {
+export function createConnection(isInitiator=false) {
   peerConnection = new RTCPeerConnection(config);
+  
+  if (isInitiator) {
+    setDataChannel(peerConnection.createDataChannel('chat'))
+    console.log(getDataChannel())
+    setupDataChannel()
+   } else {
+    peerConnection.ondatachannel = event => {
+      console.log(event.channel)
+      setDataChannel(event.channel)
+      setupDataChannel()
+    }
+  }
+
   const localStream = getLocalStream();
   localStream?.getTracks().forEach((track) => {
     peerConnection.addTrack(track, localStream);
   });
 
   /**
-   * Обробник події onicecandidate — надсилає ICE-кандидата на серверОбробник події onicecandidate — надсилає ICE-кандидата на сервер
+   * Обробник події onicecandidate — надсилає ICE-кандидата на сервер
    */
   peerConnection.onicecandidate = (event) => {
     if (event.candidate) {
@@ -100,7 +114,7 @@ export async function handleIncomingOffer({ from, offer }) {
 export async function startCall(peerId) {
   await initMedia();
   setRemoteId(peerId);
-  const connection = createConnection();
+  const connection = createConnection(true);
   const offer = await connection.createOffer();
   await connection.setLocalDescription(offer);
   socket.send(
