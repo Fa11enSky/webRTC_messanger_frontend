@@ -18,6 +18,14 @@ export function setLocalStream(stream) {
   localStream = stream;
 }
 
+/**
+ * Вимикає треки та очищує localStream
+ */
+export function clearLocalStream() {
+  localStream?.getTracks().forEach((track) => track.stop());
+  setLocalStream(null);
+}
+
 /**@type {MediaStream|null} */
 let remoteStream = null;
 
@@ -36,6 +44,14 @@ export function getRemoteStream() {
  */
 export function setRemoteStream(stream) {
   remoteStream = stream;
+}
+
+/**
+ * Вимикає треки та очищує remoteStream
+ */
+export function clearRemoteStream() {
+  remoteStream?.getTracks().forEach((track) => track.stop());
+  setRemoteStream(null);
 }
 
 /**
