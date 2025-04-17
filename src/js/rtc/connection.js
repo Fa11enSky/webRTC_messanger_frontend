@@ -5,6 +5,7 @@
  */
 import { getMyId, socket } from "../index";
 import { clearVideo } from "../ui/video";
+import { ConnectionType, RTC_CONFIG } from "./config";
 import {
   clearDataChannel,
   getDataChannel,
@@ -18,10 +19,6 @@ import {
   clearLocalStream,
   clearRemoteStream,
 } from "./media";
-
-const config = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-};
 
 /** @type {RTCPeerConnection|null} */
 let peerConnection = null;
@@ -52,7 +49,7 @@ export function getRemoteId() {
  * @returns {RTCPeerConnection}
  */
 export function createConnection(isInitiator = false) {
-  peerConnection = new RTCPeerConnection(config);
+  peerConnection = new RTCPeerConnection(RTC_CONFIG);
 
   if (isInitiator) {
     setDataChannel(peerConnection.createDataChannel("chat"));
@@ -97,13 +94,20 @@ export function createConnection(isInitiator = false) {
 
 /**
  * Обробляє вхідну WebRTC-пропозицію (offer).
- * Ініціалізує медіапотік, встановлює опис з'єднання,
+ * Залежно від типу ініціалізує медіапотік, встановлює опис з'єднання,
  * створює відповідь (answer) і надсилає її назад ініціатору.
  * @param {{ from: string, offer: RTCSessionDescriptionInit }} param0
  */
 
-export async function handleIncomingOffer({ from, offer }) {
-  await initMedia();
+export async function handleIncomingOffer({ from, offer,connectionType }) {
+  if (connectionType !== ConnectionType.DATA_ONLY) {
+    const constraints =
+      connectionType === ConnectionType.VIDEO
+        ? { audio: true, video: true }
+        : { audio: true, video: false };
+    console.log(constraints)
+    await initMedia(constraints);
+  }
   setRemoteId(from);
   const connection = createConnection();
   await connection.setRemoteDescription(new RTCSessionDescription(offer));
@@ -127,8 +131,14 @@ export async function handleIncomingOffer({ from, offer }) {
  * Запитує доступ до медіа, створює з'єднання та offer.
  * @param {string} peerId - Ідентифікатор користувача, якому телефонуємо
  */
-export async function startCall(peerId) {
-  await initMedia();
+export async function startCall(connectionType, peerId) {
+  if (connectionType !== ConnectionType.DATA_ONLY) {
+    const constraints =
+      connectionType === ConnectionType.VIDEO
+        ? { audio: true, video: true }
+        : { audio: true, video: false };
+    await initMedia(constraints);
+  }
   setRemoteId(peerId);
   const connection = createConnection(true);
   const offer = await connection.createOffer();
@@ -137,6 +147,7 @@ export async function startCall(peerId) {
     JSON.stringify({
       type: "offer",
       data: {
+        connectionType,
         from: getMyId(),
         to: peerId,
         offer,

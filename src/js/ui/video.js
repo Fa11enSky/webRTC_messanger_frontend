@@ -1,17 +1,10 @@
-import { closeConnection, startCall } from "../rtc/connection";
-
-/**
- * Обробляє подію відправки форми дзвінка.
- * Витягує ID одержувача з елемента форми та ініціює дзвінок.
- * @param {SubmitEvent} event - Подія надсилання форми
- */
-export function handleInitCall(event) {
-  event.preventDefault();
-  const id = event.target.elements.id.value;
-  startCall(id);
-}
 
 export function clearVideo() {
   document.getElementById("localVideo").srcObject = null;
   document.getElementById("remoteVideo").srcObject = null;
 }
+
+//для контролю відео використовувати 
+//const stream = getLocalStream();
+//stream.getVideoTracks()[0].enabled = false; // або true
+//stream.getAudioTracks()[0].enabled = false;
