@@ -4,8 +4,20 @@
  * Містить функції для створення peer-з'єднання, обробки offer/answer.
  */
 import { getMyId, socket } from "../index";
-import { getDataChannel, setDataChannel, setupDataChannel } from "./dataChannel";
-import { getLocalStream, initMedia, handleConnectionTrack } from "./media";
+import { clearVideo } from "../ui/video";
+import {
+  clearDataChannel,
+  getDataChannel,
+  setDataChannel,
+  setupDataChannel,
+} from "./dataChannel";
+import {
+  getLocalStream,
+  initMedia,
+  handleConnectionTrack,
+  clearLocalStream,
+  clearRemoteStream,
+} from "./media";
 
 const config = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -16,6 +28,10 @@ let peerConnection = null;
 
 export function getConnection() {
   return peerConnection;
+}
+
+export function clearConnection() {
+  peerConnection = null;
 }
 
 /**@type {string|null} */
@@ -35,19 +51,19 @@ export function getRemoteId() {
  *
  * @returns {RTCPeerConnection}
  */
-export function createConnection(isInitiator=false) {
+export function createConnection(isInitiator = false) {
   peerConnection = new RTCPeerConnection(config);
-  
+
   if (isInitiator) {
-    setDataChannel(peerConnection.createDataChannel('chat'))
-    console.log(getDataChannel())
-    setupDataChannel()
-   } else {
-    peerConnection.ondatachannel = event => {
-      console.log(event.channel)
-      setDataChannel(event.channel)
-      setupDataChannel()
-    }
+    setDataChannel(peerConnection.createDataChannel("chat"));
+    console.log(getDataChannel());
+    setupDataChannel();
+  } else {
+    peerConnection.ondatachannel = (event) => {
+      console.log(event.channel);
+      setDataChannel(event.channel);
+      setupDataChannel();
+    };
   }
 
   const localStream = getLocalStream();
@@ -136,4 +152,26 @@ export async function startCall(peerId) {
 function handleConnectionStatus() {
   console.log("Connection state:", peerConnection.connectionState);
   return peerConnection.connectionState;
+}
+
+/**
+ * Закриває WebRTC підключення, очищає dataChannel відключає
+ * та очищує медіапотоки
+ */
+export function closeConnection() {
+  if (peerConnection) {
+    const senders = peerConnection.getSenders();
+    senders.forEach((sender) => {
+      if (sender.track) {
+        sender.track.stop();
+      }
+    });
+  }
+  clearLocalStream();
+  clearRemoteStream();
+  clearDataChannel();
+  peerConnection.close();
+  clearConnection();
+  clearVideo();
+  console.log("Connection closed successfully ");
 }
