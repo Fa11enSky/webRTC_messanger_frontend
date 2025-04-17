@@ -3,13 +3,11 @@ import {
   createAppendPeerMarkup,
 } from "./markupFunctions/peerList";
 import { getConnection, handleIncomingOffer } from "./rtc/connection";
-import { handleInitCall } from "./ui/video";
 
 // Ініціалізація WebSocket-з'єднання
 export const socket = new WebSocket("ws://localhost:3002");
 
 // DOM-елементи
-const connectionForm = document.querySelector(".connection-form");
 const peersContainer = document.getElementById("peers-container");
 const messageForm = document.querySelector(".message-form");
 const messagesList = document.querySelector(".messages-list");
@@ -23,7 +21,6 @@ socket.onerror = (error) => console.log(error);
 socket.onopen = onConnectionEstablished;
 socket.onmessage = onMessageHandler;
 messageForm.addEventListener("submit", sendMessageBroadcast);
-connectionForm.addEventListener("submit", handleInitCall);
 
 /**
  * Відправляє повідомлення в загальний чат та додає його до DOM.
@@ -94,8 +91,8 @@ async function onMessageHandler(message) {
         break;
       }
       case "incomingOffer": {
-        const { from, offer } = data;
-        handleIncomingOffer({ from, offer });
+        const { from, offer,connectionType } = data;
+        handleIncomingOffer({ from, offer,connectionType });
         break;
       }
       case "incomingAnswer": {

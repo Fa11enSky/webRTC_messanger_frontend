@@ -14,12 +14,24 @@
     </form>
     <ul class="messages-list"></ul>
     <div class="connection-container">
-      <video id="localVideo"  autoplay muted playsinline></video>
-      <video id="remoteVideo"  autoplay muted playsinline></video>
+      <video id="localVideo" autoplay   playsinline></video>
+      <video id="remoteVideo" autoplay  playsinline></video>
 
       <form class="connection-form">
-        <input type="text" name="id" class="selected-id" placeholder="client ID" />
-        <button type="submit" class="establish-connection-btn">Establish a connection</button>
+        <input
+          type="text"
+          name="id"
+          class="selected-id"
+          placeholder="client ID"
+        />
+        <select id="connectionTypeSelect">
+          <option value="data-only">Тільки чат</option>
+          <option value="audio">Аудіо</option>
+          <option value="video">Відео</option>
+        </select>
+        <button type="submit" class="establish-connection-btn">
+          Establish a connection
+        </button>
       </form>
       <button id="closeBtn">close Connection</button>
     </div>

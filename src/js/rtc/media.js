@@ -60,20 +60,19 @@ export function clearRemoteStream() {
  * @returns {Promise<MediaStream|undefined>} Локальний медіапотік або undefined у разі помилки
  */
 
-export async function initMedia() {
+export async function initMedia(constraints) {
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
+    localStream = await navigator.mediaDevices.getUserMedia(constraints);
     const videoElement = document.getElementById("localVideo");
     if (videoElement) {
       videoElement.srcObject = localStream;
     }
 
     const connection = getConnection();
+    console.log(localStream.getTracks())
     if (connection && localStream) {
       localStream.getTracks().forEach((track) => {
+        
         connection.addTrack(track, localStream);
       });
     }
